@@ -88,7 +88,7 @@ class Boid {
             this.velocity.z = (this.velocity.z / speed) * MAX_SPEED;
         }
         if (speed < MIN_SPEED) {
-            this.velocity.x = MIN_SPEED;
+            this.velocity.x = (this.velocity.x / Math.abs(this.velocity.x) * MIN_SPEED;
         }
     }
 
