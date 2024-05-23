@@ -20,6 +20,7 @@ canvas.height = window.innerHeight;
 const SCALE_FACTOR= 1;
 const BOID_COUNT = 1000;
 const BOID_SIZE = 1.2;
+const MIN_SPEED = 1;
 const MAX_SPEED = 10;
 const PERCEPTION_RADIUS_AVOID = 25;
 const PERCEPTION_RADIUS = 80;
@@ -85,6 +86,9 @@ class Boid {
             this.velocity.x = (this.velocity.x / speed) * MAX_SPEED;
             this.velocity.y = (this.velocity.y / speed) * MAX_SPEED;
             this.velocity.z = (this.velocity.z / speed) * MAX_SPEED;
+        }
+        if (speed < MIN_SPEED) {
+            this.velocity.x = MIN_SPEED;
         }
     }
 
