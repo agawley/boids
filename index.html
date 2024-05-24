@@ -39,7 +39,6 @@
             PERCEPTION_RADIUS_AVOID = perceptionRadiusAvoid.value;
         });
 
-        const SCALE_FACTOR= 1;
         const BOID_COUNT = 1000;
         const BOID_SIZE = 1.2;
         const MIN_SPEED = .5;
@@ -133,29 +132,29 @@
             }
 
             edges() {
-                if (this.position.x > canvas.width * SCALE_FACTOR) this.position.x = 0;
-                if (this.position.x < 0) this.position.x = canvas.width * SCALE_FACTOR;
-                if (this.position.y > canvas.height * SCALE_FACTOR) this.position.y = 0;
-                if (this.position.y < 0) this.position.y = canvas.height * SCALE_FACTOR;
-                if (this.position.z > canvas.width * SCALE_FACTOR) this.position.z = 0;
-                if (this.position.z < 0) this.position.z = canvas.width * SCALE_FACTOR;
+                if (this.position.x > canvas.width ) this.position.x = 0;
+                if (this.position.x < 0) this.position.x = canvas.width ;
+                if (this.position.y > canvas.height) this.position.y = 0;
+                if (this.position.y < 0) this.position.y = canvas.height;
+                if (this.position.z > canvas.width) this.position.z = 0;
+                if (this.position.z < 0) this.position.z = canvas.width;
             }
 
             size() {
-                return BOID_SIZE * (1 + this.position.z / SCALE_FACTOR / canvas.width);
+                return BOID_SIZE * (1 + this.position.z / canvas.width);
             }
 
             color() {
                 return `rgba(
-                ${Math.floor(150- this.position.z / SCALE_FACTOR / canvas.width * 75)},
-                ${Math.floor(150 - this.position.z / SCALE_FACTOR / canvas.width * 75)},
-                ${Math.floor(150 - this.position.z / SCALE_FACTOR / canvas.width * 75)},
+                ${Math.floor(150- this.position.z  / canvas.width * 75)},
+                ${Math.floor(150 - this.position.z  / canvas.width * 75)},
+                ${Math.floor(150 - this.position.z  / canvas.width * 75)},
                 .9)`;
             }
 
             draw() {
                 ctx.beginPath();
-                ctx.arc(this.position.x / SCALE_FACTOR, this.position.y / SCALE_FACTOR, this.size(), 0, Math.PI * 2);
+                ctx.arc(this.position.x , this.position.y , this.size(), 0, Math.PI * 2);
                 ctx.fillStyle = this.color();
                 ctx.fill();
                 ctx.closePath();
