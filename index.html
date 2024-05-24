@@ -7,10 +7,16 @@
     <style>
         body { margin: 0; }
         canvas { display: block; }
+        .row { display: flex; justify-content: center; align-items: center;}
+        .col { margin: 10px; }
     </style>
 </head>
 <body>
-    <button id="reset">Reset</button>
+    <div class="row">
+        <div class="col"><button id="reset">Reset</button></div>
+        <div class="col row"><label for="perceptionRadius">Flocking: </label><input type="range" id="perceptionRadius" min="10" max="200" value="80"></div>
+        <div class="col row"><label for="perceptionRadiusAvoid">Avoidance: </label><input type="range" id="perceptionRadiusAvoid" min="0" max="50" value="25"></div>
+    </div>
     <canvas id="boidsCanvas"></canvas>
     <script>
         const canvas = document.getElementById('boidsCanvas');
@@ -23,13 +29,29 @@
             boids = getInitialBoids();
         });
 
+        const perceptionRadius = document.getElementById('perceptionRadius');
+        perceptionRadius.addEventListener('input', () => {
+            PERCEPTION_RADIUS = perceptionRadius.value;
+        });
+
+        const perceptionRadiusAvoid = document.getElementById('perceptionRadiusAvoid');
+        perceptionRadiusAvoid.addEventListener('input', () => {
+            PERCEPTION_RADIUS_AVOID = perceptionRadiusAvoid.value;
+        });
+
         const SCALE_FACTOR= 1;
         const BOID_COUNT = 1000;
         const BOID_SIZE = 1.2;
         const MIN_SPEED = .5;
         const MAX_SPEED = 10;
-        const PERCEPTION_RADIUS_AVOID = 25;
-        const PERCEPTION_RADIUS = 80;
+        let PERCEPTION_RADIUS_AVOID = 25;
+        let PERCEPTION_RADIUS = 80;
+
+        let SEPARATION_WEIGHT = 0.4;
+        let ALIGNMENT_WEIGHT = 0.2;
+        let COHESION_WEIGHT = 0.01;
+        let GRAVITATION_WEIGHT = 0.05;
+
 
         function calculateAngle(vector1, vector2) {
             let dotProduct = vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
@@ -78,10 +100,10 @@
                 let cohesion = this.cohere(boids);
                 let gravitation = this.gravitate();
 
-                this.applyForce(separation, .4 );
-                this.applyForce(alignment, .2);
-                this.applyForce(cohesion, .01);
-                this.applyForce(gravitation, 0.05 );
+                this.applyForce(separation, SEPARATION_WEIGHT );
+                this.applyForce(alignment, ALIGNMENT_WEIGHT);
+                this.applyForce(cohesion, COHESION_WEIGHT);
+                this.applyForce(gravitation, GRAVITATION_WEIGHT);
                 this.applyForce({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1 }, .5);
             }
 
