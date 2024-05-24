@@ -10,248 +10,253 @@
     </style>
 </head>
 <body>
+    <button id="reset">Reset</button>
     <canvas id="boidsCanvas"></canvas>
     <script>
-      const canvas = document.getElementById('boidsCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+        const canvas = document.getElementById('boidsCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-const SCALE_FACTOR= 1;
-const BOID_COUNT = 1000;
-const BOID_SIZE = 1.2;
-const MIN_SPEED = .5;
-const MAX_SPEED = 10;
-const PERCEPTION_RADIUS_AVOID = 25;
-const PERCEPTION_RADIUS = 80;
+        const SCALE_FACTOR= 1;
+        const BOID_COUNT = 1000;
+        const BOID_SIZE = 1.2;
+        const MIN_SPEED = .5;
+        const MAX_SPEED = 10;
+        const PERCEPTION_RADIUS_AVOID = 25;
+        const PERCEPTION_RADIUS = 80;
 
-function calculateAngle(vector1, vector2) {
-    let dotProduct = vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
-    let magnitude1 = Math.sqrt(vector1.x ** 2 + vector1.y ** 2 + vector1.z ** 2);
-    let magnitude2 = Math.sqrt(vector2.x ** 2 + vector2.y ** 2 + vector2.z ** 2);
-    let cosineOfAngle = dotProduct / (magnitude1 * magnitude2);
-    return cosineOfAngle;
-}
-
-function subtractVector(vector1, vector2) {
-    return { x: vector1.x - vector2.x, y: vector1.y - vector2.y, z: vector1.z - vector2.z };
-}
-
-class Boid {
-    constructor(x, y, z) {
-        this.position = { x: x, y: y, z: z};
-        this.velocity = { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1 };
-        this.acceleration = { x: 0, y: 0 , z: 0};
-    }
-
-    update(boids) {
-        this.flock(boids);
-        this.move();
-        this.edges();
-    }
-
-    applyForce(force, weight = 1) {
-        this.acceleration.x += weight * force.x;
-        this.acceleration.y += weight * force.y;
-        this.acceleration.z += weight * force.z;
-    }
-
-    flock(boids) {
-        let separation = this.separate(boids);
-        let alignment =  this.align(boids);
-        let cohesion = this.cohere(boids);
-        let gravitation = this.gravitate();
-
-        this.applyForce(separation, .4 );
-        this.applyForce(alignment, .2);
-        this.applyForce(cohesion, .01);
-        this.applyForce(gravitation, 0.05 );
-        this.applyForce({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1 }, .5);
-    }
-
-    move() {
-        this.velocity.x += this.acceleration.x;
-        this.velocity.y += this.acceleration.y;
-        this.velocity.z += this.acceleration.z;
-        this.position.x += this.velocity.x;
-        this.position.y += this.velocity.y;
-        this.position.z += this.velocity.z;
-        this.acceleration.x = 0;
-        this.acceleration.y = 0;
-        this.acceleration.z = 0;
-
-        // Limit speed
-        let speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2 + this.velocity.z ** 2);
-        if (speed > MAX_SPEED) {
-            this.velocity.x = (this.velocity.x / speed) * MAX_SPEED;
-            this.velocity.y = (this.velocity.y / speed) * MAX_SPEED;
-            this.velocity.z = (this.velocity.z / speed) * MAX_SPEED;
+        function calculateAngle(vector1, vector2) {
+            let dotProduct = vector1.x * vector2.x + vector1.y * vector2.y + vector1.z * vector2.z;
+            let magnitude1 = Math.sqrt(vector1.x ** 2 + vector1.y ** 2 + vector1.z ** 2);
+            let magnitude2 = Math.sqrt(vector2.x ** 2 + vector2.y ** 2 + vector2.z ** 2);
+            let cosineOfAngle = dotProduct / (magnitude1 * magnitude2);
+            return cosineOfAngle;
         }
-        if (speed < MIN_SPEED) {
-            this.velocity.x = (this.velocity.x / speed) * MIN_SPEED;
-            this.velocity.x = (this.velocity.x / speed) * MIN_SPEED;
-            this.velocity.x = (this.velocity.x / speed) * MIN_SPEED;
+
+        function subtractVector(vector1, vector2) {
+            return { x: vector1.x - vector2.x, y: vector1.y - vector2.y, z: vector1.z - vector2.z };
         }
-    }
-
-    edges() {
-        if (this.position.x > canvas.width * SCALE_FACTOR) this.position.x = 0;
-        if (this.position.x < 0) this.position.x = canvas.width * SCALE_FACTOR;
-        if (this.position.y > canvas.height * SCALE_FACTOR) this.position.y = 0;
-        if (this.position.y < 0) this.position.y = canvas.height * SCALE_FACTOR;
-        if (this.position.z > canvas.width * SCALE_FACTOR) this.position.z = 0;
-        if (this.position.z < 0) this.position.z = canvas.width * SCALE_FACTOR;
-    }
-
-    size() {
-        return BOID_SIZE * (1 + this.position.z / SCALE_FACTOR / canvas.width);
-    }
-
-    color() {
-        return `rgba(
-        ${Math.floor(150- this.position.z / SCALE_FACTOR / canvas.width * 75)},
-        ${Math.floor(150 - this.position.z / SCALE_FACTOR / canvas.width * 75)},
-        ${Math.floor(150 - this.position.z / SCALE_FACTOR / canvas.width * 75)},
-        .9)`;
-    }
-
-    draw() {
-        ctx.beginPath();
-        ctx.arc(this.position.x / SCALE_FACTOR, this.position.y / SCALE_FACTOR, this.size(), 0, Math.PI * 2);
-        ctx.fillStyle = this.color();
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    separate(boids) {
-        let steer = { x: 0, y: 0, z: 0 };
-        let total = 0;
-        for (let other of boids) {
-            let d = this.distance(other);
-            if (other !== this && d < PERCEPTION_RADIUS_AVOID) {
-                steer.x += this.position.x - other.position.x;
-                steer.y += this.position.y - other.position.y;
-                steer.z += this.position.z - other.position.z;
-                total++;
+        function getInitialBoids() {
+            let temp = [];
+            for (let i = 0; i < BOID_COUNT; i++) {
+                let x = Math.random() * canvas.width;
+                let y = Math.random() * canvas.height;
+                let z = Math.random() * canvas.width;
+                temp.push(new Boid(x, y, z));
             }
+            return temp;
         }
-        if (total > 0) {
-            steer.x /= total;
-            steer.y /= total;
-            steer.z /= total;
-            let magnitude = Math.sqrt(steer.x ** 2 + steer.y ** 2 + steer.z ** 2);
-            steer.x = (steer.x / magnitude) * MAX_SPEED;
-            steer.y = (steer.y / magnitude) * MAX_SPEED; 
-            steer.z = (steer.z / magnitude) * MAX_SPEED;
-        }
-        return steer;
-    }
 
-    align(boids) {
-        let steer = { x: 0, y: 0, z: 0};
-        let total = 0;
-        for (let other of boids) {
-            let d = this.velocityDependentDistance(other);
-            if (other !== this  && d < PERCEPTION_RADIUS) {
-                steer.x += other.velocity.x;
-                steer.y += other.velocity.y;
-                steer.z += other.velocity.z;
-                total++;
+        class Boid {
+            constructor(x, y, z) {
+                this.position = { x: x, y: y, z: z};
+                this.velocity = { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1 };
+                this.acceleration = { x: 0, y: 0 , z: 0};
             }
-        }
-        if (total > 0) {
-            steer.x /= total;
-            steer.y /= total;
-            steer.z /= total;
-            steer.x -= this.velocity.x;
-            steer.y -= this.velocity.y;
-            steer.z -= this.velocity.z;
+
+            update(boids) {
+                this.flock(boids);
+                this.move();
+                this.edges();
+            }
+
+            applyForce(force, weight = 1) {
+                this.acceleration.x += weight * force.x;
+                this.acceleration.y += weight * force.y;
+                this.acceleration.z += weight * force.z;
+            }
+
+            flock(boids) {
+                let separation = this.separate(boids);
+                let alignment =  this.align(boids);
+                let cohesion = this.cohere(boids);
+                let gravitation = this.gravitate();
+
+                this.applyForce(separation, .4 );
+                this.applyForce(alignment, .2);
+                this.applyForce(cohesion, .01);
+                this.applyForce(gravitation, 0.05 );
+                this.applyForce({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1 }, .5);
+            }
+
+            move() {
+                this.velocity.x += this.acceleration.x;
+                this.velocity.y += this.acceleration.y;
+                this.velocity.z += this.acceleration.z;
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+                this.position.z += this.velocity.z;
+                this.acceleration.x = 0;
+                this.acceleration.y = 0;
+                this.acceleration.z = 0;
+
+                // Limit speed
+                let speed = Math.sqrt(this.velocity.x ** 2 + this.velocity.y ** 2 + this.velocity.z ** 2);
+                if (speed > MAX_SPEED) {
+                    this.velocity.x = (this.velocity.x / speed) * MAX_SPEED;
+                    this.velocity.y = (this.velocity.y / speed) * MAX_SPEED;
+                    this.velocity.z = (this.velocity.z / speed) * MAX_SPEED;
+                }
+                if (speed < MIN_SPEED) {
+                    this.velocity.x = (this.velocity.x / speed) * MIN_SPEED;
+                    this.velocity.x = (this.velocity.x / speed) * MIN_SPEED;
+                    this.velocity.x = (this.velocity.x / speed) * MIN_SPEED;
+                }
+            }
+
+            edges() {
+                if (this.position.x > canvas.width * SCALE_FACTOR) this.position.x = 0;
+                if (this.position.x < 0) this.position.x = canvas.width * SCALE_FACTOR;
+                if (this.position.y > canvas.height * SCALE_FACTOR) this.position.y = 0;
+                if (this.position.y < 0) this.position.y = canvas.height * SCALE_FACTOR;
+                if (this.position.z > canvas.width * SCALE_FACTOR) this.position.z = 0;
+                if (this.position.z < 0) this.position.z = canvas.width * SCALE_FACTOR;
+            }
+
+            size() {
+                return BOID_SIZE * (1 + this.position.z / SCALE_FACTOR / canvas.width);
+            }
+
+            color() {
+                return `rgba(
+                ${Math.floor(150- this.position.z / SCALE_FACTOR / canvas.width * 75)},
+                ${Math.floor(150 - this.position.z / SCALE_FACTOR / canvas.width * 75)},
+                ${Math.floor(150 - this.position.z / SCALE_FACTOR / canvas.width * 75)},
+                .9)`;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.position.x / SCALE_FACTOR, this.position.y / SCALE_FACTOR, this.size(), 0, Math.PI * 2);
+                ctx.fillStyle = this.color();
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            separate(boids) {
+                let steer = { x: 0, y: 0, z: 0 };
+                let total = 0;
+                for (let other of boids) {
+                    let d = this.distance(other);
+                    if (other !== this && d < PERCEPTION_RADIUS_AVOID) {
+                        steer.x += this.position.x - other.position.x;
+                        steer.y += this.position.y - other.position.y;
+                        steer.z += this.position.z - other.position.z;
+                        total++;
+                    }
+                }
+                if (total > 0) {
+                    steer.x /= total;
+                    steer.y /= total;
+                    steer.z /= total;
+                    let magnitude = Math.sqrt(steer.x ** 2 + steer.y ** 2 + steer.z ** 2);
+                    steer.x = (steer.x / magnitude) * MAX_SPEED;
+                    steer.y = (steer.y / magnitude) * MAX_SPEED; 
+                    steer.z = (steer.z / magnitude) * MAX_SPEED;
+                }
+                return steer;
+            }
+
+            align(boids) {
+                let steer = { x: 0, y: 0, z: 0};
+                let total = 0;
+                for (let other of boids) {
+                    let d = this.velocityDependentDistance(other);
+                    if (other !== this  && d < PERCEPTION_RADIUS) {
+                        steer.x += other.velocity.x;
+                        steer.y += other.velocity.y;
+                        steer.z += other.velocity.z;
+                        total++;
+                    }
+                }
+                if (total > 0) {
+                    steer.x /= total;
+                    steer.y /= total;
+                    steer.z /= total;
+                    steer.x -= this.velocity.x;
+                    steer.y -= this.velocity.y;
+                    steer.z -= this.velocity.z;
+                    
+                    /* let magnitude = Math.sqrt(steer.x ** 2 + steer.y ** 2);
+                    steer.x = (steer.x / magnitude) * MAX_SPEED;
+                    steer.y = (steer.y / magnitude) * MAX_SPEED; */
+                }
+                return steer;
+            }
+
+            cohere(boids) {
+                let steer = { x: 0, y: 0, z: 0};
+                let total = 0;
+                for (let other of boids) {
+                    let d = this.distance(other);
+                    if (other !== this && d < PERCEPTION_RADIUS) {
+                        steer.x += other.position.x;
+                        steer.y += other.position.y;
+                        steer.z += other.position.z;
+                        total++;
+                    }
+                }
+                if (total > 0) {
+                    steer.x /= total;
+                    steer.y /= total;
+                    steer.z /= total;
+                    steer.x -= this.position.x;
+                    steer.y -= this.position.y;
+                    steer.z -= this.position.z;
+                    /* let magnitude = Math.sqrt(steer.x ** 2 + steer.y ** 2);
+                    steer.x = (steer.x / magnitude) * MAX_SPEED;
+                    steer.y = (steer.y / magnitude) * MAX_SPEED; */
+                }
+                return steer;
+            }
+
+            gravitate() {
+                let steer = { x: 0, y: 0, z: 0};
+                let center = { x: canvas.width / 2, y: canvas.height / 2, z: canvas.width / 2};
+                let toCenter = { x: 0, y: 0, z: 0};
+                toCenter.x = center.x - this.position.x;
+                toCenter.y = center.y - this.position.y;
+                toCenter.z = center.z - this.position.z;
+                if (Math.abs(toCenter.x) > canvas.width / 4 || Math.abs(toCenter.y) > canvas.height / 4 || Math.abs(toCenter.z) > canvas.width / 4) {
+                    steer.x = toCenter.x;
+                    steer.y = toCenter.y;
+                    steer.z = toCenter.z;
+                    let magnitude = Math.sqrt(steer.x ** 2 + steer.y ** 2 + steer.z ** 2);
+                    steer.x = (steer.x / magnitude) * MAX_SPEED;
+                    steer.y = (steer.y / magnitude) * MAX_SPEED;
+                    steer.z = (steer.z / magnitude) * MAX_SPEED;
+                }
+                return steer;
+            }
+
+            velocityDependentDistance(other) {
+                const vectorToOther = { x: other.position.x - this.position.x, y: other.position.y - this.position.y, z: other.position.z - this.position.z };
+                const angle = calculateAngle(this.velocity, vectorToOther);
+                return Math.sqrt((this.position.x - other.position.x) ** 2 + (this.position.y - other.position.y) ** 2 + (this.position.z - other.position.z) ** 2) * (1 / Math.max(angle,.8));
+            }
             
-            /* let magnitude = Math.sqrt(steer.x ** 2 + steer.y ** 2);
-            steer.x = (steer.x / magnitude) * MAX_SPEED;
-            steer.y = (steer.y / magnitude) * MAX_SPEED; */
-        }
-        return steer;
-    }
-
-    cohere(boids) {
-        let steer = { x: 0, y: 0, z: 0};
-        let total = 0;
-        for (let other of boids) {
-            let d = this.distance(other);
-            if (other !== this && d < PERCEPTION_RADIUS) {
-                steer.x += other.position.x;
-                steer.y += other.position.y;
-                steer.z += other.position.z;
-                total++;
+            distance(other) {
+                return Math.sqrt((this.position.x - other.position.x) ** 2 + (this.position.y - other.position.y) ** 2 + (this.position.z - other.position.z) ** 2);
             }
         }
-        if (total > 0) {
-            steer.x /= total;
-            steer.y /= total;
-            steer.z /= total;
-            steer.x -= this.position.x;
-            steer.y -= this.position.y;
-            steer.z -= this.position.z;
-            /* let magnitude = Math.sqrt(steer.x ** 2 + steer.y ** 2);
-            steer.x = (steer.x / magnitude) * MAX_SPEED;
-            steer.y = (steer.y / magnitude) * MAX_SPEED; */
+
+        let temp = getInitialBoids();
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            //boids.sort((a, b) => a.position.z - b.position.z);
+            for (let boid of temp) {
+                boid.update(temp);
+            }
+            //boids.sort((a, b) => a.position.z - b.position.z);
+            for (let boid of temp) {
+                boid.draw();
+            }
+            requestAnimationFrame(animate);
         }
-        return steer;
-    }
 
-    gravitate() {
-        let steer = { x: 0, y: 0, z: 0};
-        let center = { x: canvas.width / 2, y: canvas.height / 2, z: canvas.width / 2};
-        let toCenter = { x: 0, y: 0, z: 0};
-        toCenter.x = center.x - this.position.x;
-        toCenter.y = center.y - this.position.y;
-        toCenter.z = center.z - this.position.z;
-        if (Math.abs(toCenter.x) > canvas.width / 4 || Math.abs(toCenter.y) > canvas.height / 4 || Math.abs(toCenter.z) > canvas.width / 4) {
-            steer.x = toCenter.x;
-            steer.y = toCenter.y;
-            steer.z = toCenter.z;
-            let magnitude = Math.sqrt(steer.x ** 2 + steer.y ** 2 + steer.z ** 2);
-            steer.x = (steer.x / magnitude) * MAX_SPEED;
-            steer.y = (steer.y / magnitude) * MAX_SPEED;
-            steer.z = (steer.z / magnitude) * MAX_SPEED;
-        }
-        return steer;
-    }
-
-    velocityDependentDistance(other) {
-        const vectorToOther = { x: other.position.x - this.position.x, y: other.position.y - this.position.y, z: other.position.z - this.position.z };
-        const angle = calculateAngle(this.velocity, vectorToOther);
-        return Math.sqrt((this.position.x - other.position.x) ** 2 + (this.position.y - other.position.y) ** 2 + (this.position.z - other.position.z) ** 2) * (1 / Math.max(angle,.8));
-    }
-    
-    distance(other) {
-        return Math.sqrt((this.position.x - other.position.x) ** 2 + (this.position.y - other.position.y) ** 2 + (this.position.z - other.position.z) ** 2);
-    }
-}
-
-let boids = [];
-for (let i = 0; i < BOID_COUNT; i++) {
-    let x = Math.random() * canvas.width;
-    let y = Math.random() * canvas.height;
-    let z = Math.random() * canvas.width;
-    boids.push(new Boid(x, y, z));
-}
-
-function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    //boids.sort((a, b) => a.position.z - b.position.z);
-    for (let boid of boids) {
-        boid.update(boids);
-    }
-    //boids.sort((a, b) => a.position.z - b.position.z);
-    for (let boid of boids) {
-        boid.draw();
-    }
-    requestAnimationFrame(animate);
-}
-
-animate();
+        animate();
 
     </script>
 </body>
