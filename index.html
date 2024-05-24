@@ -18,6 +18,11 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        const resetButton = document.getElementById('reset');
+        resetButton.addEventListener('click', () => {
+            boids = getInitialBoids();
+        });
+
         const SCALE_FACTOR= 1;
         const BOID_COUNT = 1000;
         const BOID_SIZE = 1.2;
@@ -241,16 +246,16 @@
             }
         }
 
-        let temp = getInitialBoids();
+        let boids = getInitialBoids();
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             //boids.sort((a, b) => a.position.z - b.position.z);
-            for (let boid of temp) {
-                boid.update(temp);
+            for (let boid of boids) {
+                boid.update(boids);
             }
             //boids.sort((a, b) => a.position.z - b.position.z);
-            for (let boid of temp) {
+            for (let boid of boids) {
                 boid.draw();
             }
             requestAnimationFrame(animate);
