@@ -47,7 +47,7 @@
         let PERCEPTION_RADIUS = 80;
 
         let SEPARATION_WEIGHT = 0.4;
-        let ALIGNMENT_WEIGHT = 0.2;
+        let ALIGNMENT_WEIGHT = 0.05;
         let COHESION_WEIGHT = 0.01;
         let GRAVITATION_WEIGHT = 0.05;
 
@@ -84,7 +84,7 @@
             update(boids) {
                 this.flock(boids);
                 this.move();
-                this.edges();
+                //this.edges();
             }
 
             applyForce(force, weight = 1) {
@@ -103,7 +103,7 @@
                 this.applyForce(alignment, ALIGNMENT_WEIGHT);
                 this.applyForce(cohesion, COHESION_WEIGHT);
                 this.applyForce(gravitation, GRAVITATION_WEIGHT);
-                this.applyForce({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1 }, .5);
+                this.applyForce({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, z: Math.random() * 2 - 1 }, .7);
             }
 
             move() {
